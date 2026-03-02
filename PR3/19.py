@@ -1,15 +1,10 @@
-import glob
 import random
 from dataclasses import dataclass
-from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import markovify
 
 
-# ---------------------------
-# 1) Корпус (демо) — можна замінити на ваші файли
-# ---------------------------
 DEMO_CORPUS = """
 The project aims to reduce peak demand by shifting non-critical loads to off-peak hours.
 A baseline assessment was performed using smart meter data and weather-normalized consumption.
@@ -43,9 +38,6 @@ The final report summarizes outcomes, lessons learned, and next steps for contin
 """
 
 
-# ---------------------------
-# 2) Допоміжні структури
-# ---------------------------
 @dataclass
 class MarkovConfig:
     state_size: int = 2                 # 2-3 зазвичай найбільш читабельні
@@ -57,8 +49,6 @@ def build_model(corpus: str, cfg: MarkovConfig) -> markovify.Text:
     if cfg.seed is not None:
         random.seed(cfg.seed)
 
-    # NewlineText добре працює, якщо у корпусі речення/фрази відділені переносами рядка.
-    # Для “звичайного” тексту теж ок.
     model = markovify.NewlineText(
         corpus,
         state_size=cfg.state_size,
@@ -79,7 +69,6 @@ def generate_sentence(model: markovify.Text, min_words=7, max_words=30, tries=20
         w = s.split()
         if min_words <= len(w) <= max_words:
             return s
-    # fallback: менш жорсткі умови
     s = model.make_sentence(tries=tries) or model.make_short_sentence(180) or ""
     return s.strip()
 
@@ -90,9 +79,6 @@ def generate_paragraph(model: markovify.Text, n_sentences=4) -> str:
     return " ".join(sentences)
 
 
-# ---------------------------
-# 3) Генерація “реалістичного” звіту: шаблон + Markov-абзаци
-# ---------------------------
 def generate_energy_report(model: markovify.Text, rng: random.Random) -> str:
     titles = [
         "Energy Efficiency Upgrade Report",
@@ -110,7 +96,6 @@ def generate_energy_report(model: markovify.Text, rng: random.Random) -> str:
     period = rng.choice(periods)
     kpi = rng.choice(kpis)
 
-    # Структурований текст + Markovify для “живих” абзаців
     parts = [
         f"# {title}\n",
         f"**Site:** {site}\n**Period:** {period}\n**Primary KPI:** {kpi}\n",
@@ -131,13 +116,11 @@ def main():
     model = build_model(corpus, cfg)
     rng = random.Random(cfg.seed)
 
-    # 1) Згенерувати кілька коротких “описів проекту”
     print("=== Random project descriptions ===")
     for i in range(3):
         desc = generate_paragraph(model, n_sentences=3)
         print(f"\n[{i+1}] {desc}")
 
-    # 2) Згенерувати структурований “звіт”
     print("\n\n=== Full synthetic report ===\n")
     report = generate_energy_report(model, rng)
     print(report)
